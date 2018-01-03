@@ -3,6 +3,7 @@ import os
 from matplotlib import pyplot as plt
 import tensorflow as tf
 
+
 FOLDER_TRAINING_SET='/Users/dboudeau/depot/leaf/'
 
 filenames=os.listdir(FOLDER_TRAINING_SET+'THUYA/') 
