@@ -102,9 +102,11 @@ def predict(file_name):
   values, indices =tf.nn.top_k(results, len(labels))
 
   print "Displaying results:"
+  prediction={}
   for i in top_k:
     print labels[i]
     print results[i]
+  return prediction
 
 
 
@@ -119,8 +121,8 @@ def upload():
         file.save(os.path.join("/home/input/", f_name))
 
         print "Predicting"
-        predict("/home/input/"+f_name)
-        return json.dumps({"response":"ok"})
+        dictPrediction=predict("/home/input/"+f_name)
+        return json.dumps(dictPrediction)
 
 
 
