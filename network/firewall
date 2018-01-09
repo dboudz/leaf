@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# iptables rules init
+
+
+echo " * Flushing rules ...."
+iptables -F
+echo " * Removing old rules ..."
+iptables -X
+
+
+# allow the incomming traffic
+echo " * Don't block established traffic ..."
+iptables -A INPUT -m state --state ESTABLISHED -j ACCEPT
+
+# allow ssh traffic
+echo " * Allowing ssh ..."
+iptables -A INPUT -p tcp -i eth0 --dport ssh -j ACCEPT
+iptables -A INPUT -p tcp -i eth0 --dport 443 -j ACCEPT
+
+# set POLICY default to DROP
+echo " * Default policy set to DROP ..."
+iptables -P INPUT DROP
+iptables -P FORWARD DROP
+
+# allow http(s) traffic
+echo " * Opening HTTP traffic ..."
+iptables -A INPUT -p tcp -i eth0 --dport 80 -j ACCEPT
+#iptables -A INPUT -p tcp --dport 4433 -j ACCEPT
+
+# allow subsonic
+#iptables -A INPUT -p tcp --dport 4040 -j ACCEPT
+
+# allow rutorrent
+echo " * Opening port range 6881-6999 for rtorrent"
+iptables -A INPUT -p tcp -m multiport --dports 6881:6999 -j ACCEPT
+
+# Mumble
+echo " * Mumble (because TS3 sux) ..."
+iptables -A INPUT -p tcp --dport 64738 -j ACCEPT
+iptables -A INPUT -p udp --dport 64738 -j ACCEPT
+
+# allow local traffic
+echo " * Accept all local traffic ..."
+iptables -I INPUT 2 -i lo -j ACCEPT
+
+# allow response to ping and ping
+echo " * Reply to ping ..."
+iptables -A OUTPUT -p icmp -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
+iptables -A INPUT -p icmp -j ACCEPT
+
+# restart fail2ban
+echo " * Reloading fail2ban ..."
+service fail2ban reload
+echo " * Restarting fail2ban ..."
+service fail2ban restart
+
+# ALLOW ME FFS
+echo " * Allowing home ip"
+iptables -I INPUT 1 -s 88.177.185.249 -j ACCEPT
+# AZALEAD IP
+iptables -I INPUT 2 -s 90.63.216.181 -j ACCEPT
