@@ -1,4 +1,6 @@
 from flask import Flask, request
+from flask_cors import CORS
+import base64
 import uuid
 import os
 import json
@@ -6,11 +8,15 @@ import tensorflow as tf
 import numpy as np
 
 app = Flask(__name__)
+# Very important for tests purposes (CORS)
+CORS(app)
+PATH_STORAGE='/home/input/'
 
 
-@app.route("/")
-def hello():
-    return "Hello World!"
+
+#@app.route("/")
+#def hello():
+#    return "Hello World!"
 
 
 def load_graph(model_file):
@@ -123,24 +129,59 @@ def predict(file_name):
     for i in range(0,NUMBER_OF_TOP_RESULTS):
         prediction_sorted[str(i+1)] = prediction_raw.get(str(top_k[i]))
 
+    print "prediction raw :"
     print prediction_raw
     return prediction_sorted
 
 
-@app.route('/predict', methods=['POST'])
-def upload():
+# This Endpoint is used for testing purposed
+@app.route('/test', methods=['POST'])
+def endpoint_predict_test():
     print "Receive request"
     if request.method == 'POST':
         print "Receiving file"
         file = request.files['file']
-
         print request
 
         extension = os.path.splitext(file.filename)[1]
-        f_name = str(uuid.uuid4()) + extension
-        print "Writting file /home/input/" + f_name
-        file.save(os.path.join("/home/input/", f_name))
+        f_uuid= str(uuid.uuid4())
+        f_name = f_uuid + extension
+        print "Writting file " + PATH_STORAGE + f_name
+        file.save(os.path.join(PATH_STORAGE, f_name))
 
         print "Predicting"
-        dictPrediction = predict("/home/input/" + f_name)
-        return json.dumps(dictPrediction)
+        dictPrediction = predict(PATH_STORAGE + f_name)
+        response={'prediction':dictPrediction ,'remote_id':f_uuid}
+        print "response is now :"
+        print response
+        return json.dumps(response)
+
+# Endpoint used by application
+@app.route('/predict', methods=['POST'])
+def endpoint_predict():
+
+    if request.method == 'POST':
+        print "Receiving file"
+        jsonrequest=request.get_json()
+
+        file_content = jsonrequest.get('file_content')
+        print file_content
+        file_extension=jsonrequest.get('file_extension')
+        print file_extension
+
+        # Saving file
+        f_uuid= str(uuid.uuid4())
+        f_name = f_uuid+ '.' + file_extension
+        fh = open(PATH_STORAGE+f_name, "wb")
+        fh.write(base64.decodestring(file_content))
+        fh.close()
+
+        print "Predicting"
+        dictPrediction = predict(PATH_STORAGE + f_name)
+        response={'prediction':dictPrediction ,'remote_id':f_uuid}
+        print "response is now :"
+        print response
+        return json.dumps(response)
+    else:
+        print "Receive request that is not a post"
+        return json.dumps({'error':'Receive request that is not a POST'})
